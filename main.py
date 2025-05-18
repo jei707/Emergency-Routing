@@ -1,16 +1,17 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 import heapq
+import networkx as nx
+import matplotlib.pyplot as plt
 
 class EmergencyRouteApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Emergency Route Optimizer")
         self.graph = {}
-        self.root.geometry("550x400") 
+        self.root.geometry("550x450") 
 
-        #Road Inputs
-
+        # Road Inputs
         self.edges_frame = tk.Frame(root)
         self.edges_frame.pack(pady=10)
 
@@ -37,8 +38,7 @@ class EmergencyRouteApp:
         self.add_button = tk.Button(self.edges_frame, text="Add Road", command=self.add_edge)
         self.add_button.grid(row=2, column=0, columnspan=6, pady=(15, 5))
 
-        #Road List----------------
-
+        # Road List
         self.list_frame = tk.Frame(root)
         self.list_frame.pack(pady=10)
 
@@ -53,8 +53,7 @@ class EmergencyRouteApp:
 
         self.road_listbox.config(yscrollcommand=scrollbar.set)
 
-        #Route Inputs------------------
-
+        # Route Inputs
         self.route_frame = tk.Frame(root)
         self.route_frame.pack(pady=10)
 
@@ -68,6 +67,9 @@ class EmergencyRouteApp:
 
         self.find_button = tk.Button(root, text="Find Optimal Route", command=self.find_route)
         self.find_button.pack(pady=5)
+
+        self.graph_button = tk.Button(root, text="Show Graph", command=self.show_graph)
+        self.graph_button.pack(pady=5)
 
         self.result_label = tk.Label(root, text="", fg="blue")
         self.result_label.pack(pady=10)
@@ -88,27 +90,19 @@ class EmergencyRouteApp:
             messagebox.showerror("Input Error", "Please enter both locations.")
             return
 
-        #Computing cost---------------Uses Weighted Sum Model
+        # Composite cost using Weighted Sum Model
         distance_weight = 1.0
         time_weight = 0.5
         risk_weight = 5.0
 
-        #Composite cost---------------
-        w = (
-            distance_weight * distance +
-            time_weight * time +
-            risk_weight * risk
-        )
+        w = distance_weight * distance + time_weight * time + risk_weight * risk
 
-        #Add to graph-----------------
         self.graph.setdefault(u, []).append((v, w))
         self.graph.setdefault(v, []).append((u, w))
 
-        #Update listbox----------------
         self.road_listbox.insert(tk.END,
             f"{u} ↔ {v} | Cost: {w:.2f} (D:{distance}, T:{time}, R:{risk})")
 
-        #Clear fields---------------
         for entry in [
             self.from_entry, self.to_entry, self.distance_entry,
             self.time_entry, self.risk_entry
@@ -149,6 +143,24 @@ class EmergencyRouteApp:
                     heapq.heappush(queue, (cost + weight, neighbor, path + [neighbor]))
 
         return (float("inf"), [])
+
+    def show_graph(self):
+        G = nx.Graph()
+        for node in self.graph:
+            for neighbor, cost in self.graph[node]:
+                if not G.has_edge(node, neighbor):
+                    G.add_edge(node, neighbor, weight=round(cost, 2))
+
+        pos = nx.spring_layout(G)
+        edge_labels = nx.get_edge_attributes(G, 'weight')
+
+        plt.figure(figsize=(7, 5))
+        nx.draw(G, pos, with_labels=True, node_color='lightblue', edge_color='gray',
+                node_size=1500, font_size=10)
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='red')
+        plt.title("Road Network Graph")
+        plt.tight_layout()
+        plt.show()
 
 if __name__ == "__main__":
     root = tk.Tk()
