@@ -98,7 +98,8 @@ class EmergencyRouteApp:
         if not u or not v:
             messagebox.showerror("Input Error", "Please enter both locations.")
             return
-
+        
+        #Composite cost using the Weighted sum model
         cost = 1.0 * distance + 0.5 * time + 5.0 * risk
 
         self.graph.setdefault(u, []).append((v, cost))
